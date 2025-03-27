@@ -1,18 +1,12 @@
-
-import google
 import streamlit as st
 import google.generativeai as genai
-from google.generativeai import types
-from google.generativeai import GenerateContentConfig
-
+from google.genai import types
 from PIL import Image
 from io import BytesIO
 import base64
 
 # Initialize the Gemini API client with your API key
-genai.configure(api_key='AIzaSyDz6Vzwjo2WpvJszB6FuPLQ7Emmvv6QLqc')
-model = genai.GenerativeModel('gemini-2.0-flash-exp-image-generation')
-#client = genai.Client(api_key='AIzaSyDz6Vzwjo2WpvJszB6FuPLQ7Emmvv6QLqc')
+client = genai.Client(api_key='AIzaSyDz6Vzwjo2WpvJszB6FuPLQ7Emmvv6QLqc')
 
 def generate_image(prompt, uploaded_images):
     """
@@ -32,12 +26,14 @@ def generate_image(prompt, uploaded_images):
         except Exception as e:
             st.error(f"Error reading image: {e}")
             return None
-    generation_config = genai.types.GenerateContentConfig(response_modalities=['Text', 'Image']) 
+
     # Make the API call using the Gemini model
-    response = model.generate_content(
-        #model="gemini-2.0-flash-exp-image-generation",
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-exp-image-generation",
         contents=contents,
-        generation_config=generation_config
+        config=types.GenerateContentConfig(
+            response_modalities=['Text', 'Image']
+        )
     )
 
     # Process the response: look for the first image in the candidate parts.
