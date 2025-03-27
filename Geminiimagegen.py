@@ -8,7 +8,8 @@ from io import BytesIO
 import base64
 
 # Initialize the Gemini API client with your API key
-client = genai.Client(api_key='AIzaSyDz6Vzwjo2WpvJszB6FuPLQ7Emmvv6QLqc')
+client = genai.configure(api_key='AIzaSyDz6Vzwjo2WpvJszB6FuPLQ7Emmvv6QLqc')
+#client = genai.Client(api_key='AIzaSyDz6Vzwjo2WpvJszB6FuPLQ7Emmvv6QLqc')
 
 def generate_image(prompt, uploaded_images):
     """
