@@ -74,7 +74,7 @@ def main():
             if gen_image:
                 st.success("Image generated successfully!")
                 # Display the generated image
-                st.image(gen_image, caption="Generated Image", use_column_width=True)
+                st.image(gen_image, caption="Generated Image", use_container_width=True)
                 # Prepare download button: convert image to bytes
                 buf = BytesIO()
                 gen_image.save(buf, format="PNG")
