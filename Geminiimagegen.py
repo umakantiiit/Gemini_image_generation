@@ -1,7 +1,6 @@
 import streamlit as st
-import google
-from google import genai
-from google.genai import types
+import google.generativeai as genai
+from google.generativeai import types
 from PIL import Image
 from io import BytesIO
 import base64
@@ -37,16 +36,20 @@ def generate_image(prompt, uploaded_images):
         )
     )
 
-    # Process the response: look for the first image in the candidate parts.
-    for part in response.candidates[0].content.parts:
-        if part.inline_data is not None:
-            try:
-                # Convert inline data to image
-                gen_image = Image.open(BytesIO(part.inline_data.data))
-                return gen_image
-            except Exception as e:
-                st.error(f"Error processing generated image: {e}")
-                return None
+    # Process the response: try to extract the generated image.
+    try:
+        for part in response.candidates[0].content.parts:
+            if part.inline_data is not None:
+                try:
+                    # Convert inline data to image
+                    gen_image = Image.open(BytesIO(part.inline_data.data))
+                    return gen_image
+                except Exception as e:
+                    st.error(f"Error processing generated image: {e}")
+                    return None
+    except Exception as e:
+        st.error("Gemini cannot generate image with this prompt. Please try a different prompt.")
+        return None
 
     st.error("No image was generated. Please try again.")
     return None
