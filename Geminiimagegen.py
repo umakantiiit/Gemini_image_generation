@@ -31,14 +31,12 @@ def generate_image(prompt, uploaded_images):
         except Exception as e:
             st.error(f"Error reading image: {e}")
             return None
-
+    generation_config = genai.types.GenerateContentConfig(response_modalities=['Text', 'Image']) 
     # Make the API call using the Gemini model
     response = model.generate_content(
         #model="gemini-2.0-flash-exp-image-generation",
         contents=contents,
-        config=types.GenerateContentConfig(
-            response_modalities=['Text', 'Image']
-        )
+        generation_config=generation_config
     )
 
     # Process the response: look for the first image in the candidate parts.
