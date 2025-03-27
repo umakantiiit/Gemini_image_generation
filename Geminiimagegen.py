@@ -3,6 +3,7 @@ import google
 import streamlit as st
 import google.generativeai as genai
 from google.generativeai import types
+from google.generativeai import GenerateContentConfig
 
 from PIL import Image
 from io import BytesIO
