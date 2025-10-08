@@ -31,25 +31,234 @@ class HindiAudioAnalysisPipeline:
             temperature=0.1
         )
         
-        self.transcription_prompt = """
-        Please transcribe this Hindi audio file accurately. 
-        Provide the transcription in JSON format with proper structure.
-        Include timestamps if possible and maintain speaker identification.
-        """
-        
-        self.analysis_prompt = """
-        Analyze the provided Hindi conversation transcript and extract the following information in JSON format:
-        
-        1. Call Summary: Brief overview of the conversation
-        2. Key Topics: Main topics discussed
-        3. Sentiment: Overall sentiment of the conversation
-        4. Action Items: Any tasks or follow-ups mentioned
-        5. Important Dates/Times: Any dates or times mentioned
-        6. Customer Issues: Problems or concerns raised
-        7. Resolution Status: Whether issues were resolved
-        
-        Provide the analysis in structured JSON format.
-        """
+        self.transcription_prompt = '''
+This is a Hindi language conversation happens between a caller from the govt organisation and a tribal people . U need to pay close attention to the conversation and generate the transcript of it . Also make sure to do the speaker diarization. Donot pay much attention to the background noise and try not to include it in the transcript. Output it in the below mentioned json format .
+If a speaker cannot be identified, label them as "Unknown."
+Context about the caller and conversation - The conversation is all about the a speaker  asking  citizens about to whom they want to see as their next cheif minister and to whom they want to see as their next local leader. The speaker will give them multiple options of leader name as well as their party and the citizen have to choose between them. It is just for information purpose and not for actual casting of vote. The speaker may ask the vidhansabha constituency details and the mobile number and the religion of the citizen .The speaker may ask question about wheather they are satisfied by the work of the current leader or chief minister etc. and take opinion of the people.
+OUTPUT THE EXACT NUMBER OF SPEAKER.DONOT BIASED BY THE CONTEXT. ANALYSE THE AUDIO PROPERLY .
+Provide the output in the following JSON structure:
+{
+  "Call Details": {
+    "Number of Speakers": "<total_number_of_speakers>",
+    "Transcript": [
+      {
+        "Speaker": "<Speaker>",
+        "Timestamp": {
+          "Start": "<start_time>",
+          "End": "<end_time>"
+        },
+        "Voice": "<extracted_text_from_audio>"
+      },
+      {
+        "Speaker": "<Speaker>",
+        "Timestamp": {
+          "Start": "<start_time>",
+          "End": "<end_time>"
+        },
+        "Voice": "<extracted_text_from_audio>"
+      },
+      ...
+    ]
+  }
+}
+'''
+    self.analysis_prompt = '''
+You are an expert analyst tasked with extracting specific information from Hindi language audio call transcripts. Your job is to carefully analyze the provided transcript and extract answers to predefined survey questions.
+
+## CRITICAL INSTRUCTIONS:
+
+1. **READ THE ENTIRE TRANSCRIPT CAREFULLY** before answering any question
+2. **EXTRACT ANSWERS ONLY FROM THE TRANSCRIPT** - Do not make assumptions or infer answers
+3. **MATCH ANSWERS TO PROVIDED OPTIONS** - You must select from the given options only
+4. **LANGUAGE HANDLING**: The transcript is in Hindi. Understand the context and meaning in Hindi to match with the provided options
+5. **HANDLE MISSING INFORMATION**: If an answer to a question is not found in the transcript, output "Not Available"
+6. **BE PRECISE**: Match the respondent's answer to the closest provided option based on the meaning and context
+7. **OUTPUT FORMAT**: Return responses in valid JSON format only
+
+## SURVEY QUESTIONS WITH OPTIONS:
+
+### Section 1 – Personal Questions
+
+**Question 1:** क्या आपका वोट इसी विधानसभा में बना हुआ है ?
+**Options:**
+- हाँ
+- नहीं
+
+**Question 2:** क्या मैं आपकी उम्र जान सकता हूँ ?
+**Options:**
+- 18-30 वर्ष
+- 31-45 वर्ष
+- 46-60 वर्ष
+- 60 वर्ष से अधिक
+- बताना नहीं चाहते
+
+**Question 3:** लिंग: (पूछना नहीं है देखकर भरें)
+**Options:**
+- पुरुष
+- महिला
+
+**Question 4:** आप क्या काम करते हैं ?
+**Options:**
+- कृषि
+- मजदूरी/दैनिक वेतन
+- सरकारी नौकरी
+- निजी नौकरी
+- स्वरोजगार/व्यवसाय
+- बेरोजगार
+- हाउसवाइफ / गृहिणी
+- छात्र / पढाई
+- अन्य (कृपया उल्लेख करें)
+
+**Question 5:** आप कौन से धर्म से हैं?
+**Options:**
+- हिन्दू
+- मुस्लिम
+- सिख
+- क्रिस्चियन
+- जैन
+- बुद्धिस्ट
+- किसी धर्म को नहीं मानता
+- बताना नहीं चाहते
+
+**Question 6:** आपकी जाति क्या है ?
+**Options:**
+- (विधानसभा के टॉप 12 जातियों की लिस्ट के अनुसार)
+
+---
+
+### Section 2 – Political Questions
+
+**Question 7:** आपके एमएलए/ विधायक का क्या नाम है?
+**Options:**
+- MLA का नाम सही बताया
+- MLA का नाम नहीं पता
+- MLA का नाम गलत बताया
+
+**Question 8:** क्या आप अपने विधायक के काम से खुश हैं ?
+**Options:**
+- हाँ
+- नहीं
+- कुछ कह नहीं सकते
+
+**Question 9:** अगर आपका विधायक फिर से चुनाव लड़ता है तो क्या आप उन्हें वोट देंगे ?
+**Options:**
+- हाँ
+- नहीं
+- कुछ कह नहीं सकते
+
+**Question 9.1:** अगर नहीं तो, आप अगले विधायक के रूप में किसे देखना चाहते हैं ?
+**Options:**
+- (संभावित उम्मीदवारों की सुची के अनुसार)
+
+**Question 10:** आप आने वाले विधानसभा चुनाव में किस पार्टी को वोट देंगे?
+**Options:**
+- JDU | NDA
+- महागठबंधन | MGB
+- जन सुराज पार्टी
+- अन्य
+- बीएसपि | BSP
+- NOTA
+- कह नहीं सकते
+
+**Question 11:** 2020 के पिछले विधानसभा चुनाव में आपने किस पार्टी को वोट दिया था?
+**Options:**
+- JDU | NDA
+- महागठबंधन | MGB
+- लोक जनशक्ति पार्टी (लोजपा)
+- अन्य
+- बीएसपि | BSP
+- NOTA
+- कह नहीं सकते / याद नहीं
+- वोट नहीं दिया
+
+**Question 12:** क्या आप बिहार सरकार द्वारा 2020 – 25 में किए गए काम से शंतुष्ट हैं ?
+**Options:**
+- बिलकुल शंतुष्ट हैं
+- बिलकुल शंतुष्ट नहीं
+- कुछ हद तक शंतुष्ट हैं
+- कुछ कह नहीं सकते
+
+**Question 13:** आप अगले मुख्यमंत्री के रूप में किसे देखना चाहते हैं ?
+**Options:**
+- नितीश कुमार
+- तेजश्वी यादव
+- सम्राट चौधरी
+- चिराग पासवान
+- प्रशांत किशोर
+- अन्य
+
+---
+
+### Section 3 – Observational Questions
+
+**Question 14:** आप गाँव में रहते हैं या शहर में?
+**Options:**
+- गाँव
+- शहर
+
+**Question 15:** ब्लाक का नाम (आप जहाँ है उस ब्लाक का नाम चुनें)
+**Note:** Extract the exact block name mentioned in the transcript
+
+**Question 16:** गाँव / पंचायत का नाम (आप जिस गाँव/ पंचायत में है उस पंचायत का नाम चुनें)
+**Note:** Extract the exact village/panchayat name mentioned in the transcript
+
+**Question 17:** सर क्या मैं आपका मोबाइल नंबर जान सकता हूँ ?
+**Note:** Extract the mobile number if provided in the transcript
+
+---
+
+## ANALYSIS GUIDELINES:
+
+1. **For Questions 1-14**: Select EXACTLY ONE option from the provided list that best matches the respondent's answer
+2. **For Question 15-17**: Extract the exact information (block name, village/panchayat name, mobile number) as mentioned in the transcript
+3. **Contextual Understanding**: Understand variations in Hindi responses. For example:
+   - "हाँ", "जी हाँ", "बिल्कुल", "ठीक है" all mean "Yes"
+   - "नहीं", "जी नहीं", "बिल्कुल नहीं" all mean "No"
+   - Age ranges: Listen for specific numbers and categorize appropriately
+4. **Partial Answers**: If the respondent gives an incomplete or unclear answer, choose "कुछ कह नहीं सकते" or equivalent option if available
+5. **Question 9.1**: Only answer this if the respondent answered "नहीं" to Question 9
+
+## OUTPUT FORMAT:
+
+Return your analysis in the following JSON structure:
+
+{
+  "section_1": {
+    "question_1": "selected option or Not Available",
+    "question_2": "selected option or Not Available",
+    "question_3": "selected option or Not Available",
+    "question_4": "selected option or Not Available",
+    "question_5": "selected option or Not Available",
+    "question_6": "answer or Not Available"
+  },
+  "section_2": {
+    "question_7": "selected option or Not Available",
+    "question_8": "selected option or Not Available",
+    "question_9": "selected option or Not Available",
+    "question_9_1": "answer or Not Available",
+    "question_10": "selected option or Not Available",
+    "question_11": "selected option or Not Available",
+    "question_12": "selected option or Not Available",
+    "question_13": "selected option or Not Available"
+  },
+  "section_3": {
+    "question_14": "selected option or Not Available",
+    "question_15": "block name or Not Available",
+    "question_16": "village/panchayat name or Not Available",
+    "question_17": "mobile number or Not Available"
+  }
+}
+
+## IMPORTANT REMINDERS:
+
+- **DO NOT TRANSLATE** the options - keep them in Hindi as provided
+- **DO NOT INVENT** answers - only extract from the transcript. U can do a bit assumption by taking word from the transcript but DONOT GUESS COMPLETELY.
+- **ENSURE VALID JSON** - proper formatting with quotes and commas
+- **ONE ANSWER PER QUESTION** - select only one option from the provided list
+- **EXACT OPTION MATCH** - use the exact text of the option as provided above
+
+Now, please analyze the given Hindi transcript and provide the extracted information in the specified JSON format:
+'''
     
     def _load_audio_to_base64(self, file_path: str) -> str:
         with open(file_path, "rb") as audio_file:
