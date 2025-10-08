@@ -62,7 +62,8 @@ Provide the output in the following JSON structure:
   }
 }
 '''
-    self.analysis_prompt = '''
+        
+        self.analysis_prompt = '''
 You are an expert analyst tasked with extracting specific information from Hindi language audio call transcripts. Your job is to carefully analyze the provided transcript and extract answers to predefined survey questions.
 
 ## CRITICAL INSTRUCTIONS:
@@ -259,6 +260,7 @@ Return your analysis in the following JSON structure:
 
 Now, please analyze the given Hindi transcript and provide the extracted information in the specified JSON format:
 '''
+
     
     def _load_audio_to_base64(self, file_path: str) -> str:
         with open(file_path, "rb") as audio_file:
